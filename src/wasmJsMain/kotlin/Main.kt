@@ -108,7 +108,7 @@ fun MusicalChairsGame() {
                     // Normal movement around the oval
                     players = players.map { player ->
                         if (!player.isEliminated && !player.isSitting) {
-                            val newPosition = (player.position + 0.008f) % 1f
+                            val newPosition = (player.position + 0.004f) % 1f
                             player.copy(position = newPosition)
                         } else player
                     }
@@ -117,7 +117,7 @@ fun MusicalChairsGame() {
                     val centerX = 800.dp.value / 2
                     val centerY = 500.dp.value / 2
 
-                    val step = 0.008f
+                    val step = 0.004f
                     var eliminatedPlayer: Player? = null
 
                     // First pass: move players and check for lap completion
@@ -215,7 +215,7 @@ fun MusicalChairsGame() {
                         gameState = GameState.GAME_OVER
                     } else {
                         // Reset for next round - seat remaining players on chairs
-                        players = seatPlayersOnChairs(players, chairs)
+                        players = seatPlayersOnChairs(players)
                         gameState = GameState.WAITING
                     }
                 }
@@ -546,7 +546,7 @@ fun findClaimableChair(
 }
 
 
-fun seatPlayersOnChairs(players: List<Player>, chairs: List<Chair>): List<Player> {
+fun seatPlayersOnChairs(players: List<Player>): List<Player> {
     // Keep players on their current chairs, just reset the lap tracking
     return players.map { player ->
         if (!player.isEliminated && player.isSitting) {
