@@ -21,6 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.CanvasBasedWindow
+import kotlinx.browser.document
+import org.w3c.dom.Audio
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -99,6 +101,20 @@ fun MusicalChairsGame() {
     var gameState by remember { mutableStateOf(GameState.WAITING) }
     var players by remember { mutableStateOf(createInitialPlayers()) }
     var chairs by remember { mutableStateOf(createInitialChairs()) }
+
+    // Audio player for background music
+    val audio = remember { Audio("audio/happy-life.mp3").apply { loop = true } }
+
+    // Control audio based on game state
+    LaunchedEffect(gameState) {
+        when (gameState) {
+            GameState.PLAYING -> {
+                audio.currentTime = 0.0
+                audio.play()
+            }
+            else -> audio.pause()
+        }
+    }
 
     // Animation loop - use a Unit key so the coroutine isn't canceled on state changes
     LaunchedEffect(Unit) {
