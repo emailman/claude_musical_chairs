@@ -379,8 +379,8 @@ fun getChairPosition(chair: Chair, centerX: Float, centerY: Float): Offset {
 // Stadium path geometry constants - adjusts based on remaining chairs
 fun getStadiumGeometry(chairs: List<Chair>): StadiumGeometry {
     // Chairs are at centerX ± 60, so the path should be outside that
-    // Using halfWidth = 100 puts the path at centerX ± 100
-    val halfWidth = 100f
+    // Using halfWidth = 120 puts the path at centerX ± 120 for more clearance
+    val halfWidth = 120f
 
     // Calculate the extent of remaining chairs
     val activeChairs = chairs.filter { !it.isRemoved }
