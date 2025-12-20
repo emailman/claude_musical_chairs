@@ -349,17 +349,31 @@ fun getChairPosition(chair: Chair, centerX: Float, centerY: Float): Offset {
     return Offset(x, y)
 }
 
-// Stadium path geometry constants
-fun getStadiumGeometry(): StadiumGeometry {
+// Stadium path geometry constants - adjusts based on remaining chairs
+fun getStadiumGeometry(chairs: List<Chair>): StadiumGeometry {
     // Chairs are at centerX ± 60, so path should be outside that
     // Using halfWidth = 100 puts the path at centerX ± 100
     val halfWidth = 100f
 
-    // The straight sections must cover all chair rows
-    // Chairs span from centerY - 160 (row 4) to centerY + 160 (row 0)
-    // Add buffer for tolerance, so straight sections go from -200 to +200
-    val halfStraight = 200f
-    val straightLength = halfStraight * 2  // 400
+    // Calculate the extent of remaining chairs
+    val activeChairs = chairs.filter { !it.isRemoved }
+    val activeRows = activeChairs.map { it.row }.distinct()
+
+    // Chair row Y positions: centerY + (2 - row) * CHAIR_SPACING
+    // Row 0: +160, Row 1: +80, Row 2: 0, Row 3: -80, Row 4: -160
+    val minRow = activeRows.minOrNull() ?: 0
+    val maxRow = activeRows.maxOrNull() ?: 4
+
+    // Calculate Y extent of remaining chairs
+    val topY = (2 - maxRow) * CHAIR_SPACING  // Most negative Y (top of screen)
+    val bottomY = (2 - minRow) * CHAIR_SPACING  // Most positive Y (bottom of screen)
+
+    // halfStraight should cover from topY to bottomY plus buffer
+    val chairExtent = (bottomY - topY) / 2
+    val buffer = 40f  // Buffer above and below chairs
+    val halfStraight = chairExtent + buffer
+
+    val straightLength = halfStraight * 2
 
     // Semi-circle radius must equal halfWidth for smooth path connection
     val radius = halfWidth  // 100
@@ -377,7 +391,10 @@ fun getStadiumGeometry(): StadiumGeometry {
     val seg3End = (seg1Len + seg2Len + seg3Len) / perimeter
     val seg4End = (seg1Len + seg2Len + seg3Len + seg4Len) / perimeter
 
-    return StadiumGeometry(halfWidth, radius, straightLength, halfStraight, perimeter, seg1End, seg2End, seg3End, seg4End)
+    // Also store the center offset (midpoint between top and bottom chairs)
+    val centerOffset = (topY + bottomY) / 2
+
+    return StadiumGeometry(halfWidth, radius, straightLength, halfStraight, perimeter, seg1End, seg2End, seg3End, seg4End, centerOffset)
 }
 
 data class StadiumGeometry(
@@ -389,11 +406,12 @@ data class StadiumGeometry(
     val seg1End: Float,  // End of right straight (middle to bottom)
     val seg2End: Float,  // End of bottom semi-circle
     val seg3End: Float,  // End of left straight (bottom to top)
-    val seg4End: Float   // End of top semi-circle
+    val seg4End: Float,  // End of top semi-circle
+    val centerOffset: Float = 0f  // Vertical offset to center path on remaining chairs
 )
 
-fun getPathSegment(t: Float): PathSegment {
-    val geom = getStadiumGeometry()
+fun getPathSegment(t: Float, chairs: List<Chair>): PathSegment {
+    val geom = getStadiumGeometry(chairs)
     return when {
         t < geom.seg1End -> PathSegment.RIGHT_STRAIGHT
         t < geom.seg2End -> PathSegment.BOTTOM_SEMI
@@ -403,9 +421,12 @@ fun getPathSegment(t: Float): PathSegment {
     }
 }
 
-fun getOvalPosition(t: Float, centerX: Float, centerY: Float): Offset {
-    val geom = getStadiumGeometry()
+fun getOvalPosition(t: Float, centerX: Float, centerY: Float, chairs: List<Chair>): Offset {
+    val geom = getStadiumGeometry(chairs)
     val distance = t * geom.perimeter
+
+    // Apply center offset to shift path vertically based on remaining chairs
+    val adjustedCenterY = centerY + geom.centerOffset
 
     // Segment lengths
     val seg1Len = geom.halfStraight
@@ -420,38 +441,36 @@ fun getOvalPosition(t: Float, centerX: Float, centerY: Float): Offset {
 
     return when {
         distance < seg1End -> {
-            // Right straight, going down from middle (centerY to centerY + halfStraight)
-            Offset(centerX + geom.halfWidth, centerY + distance)
+            // Right straight, going down from middle
+            Offset(centerX + geom.halfWidth, adjustedCenterY + distance)
         }
         distance < seg2End -> {
             // Bottom semi-circle (right to left, going through bottom)
             val arcDistance = distance - seg1End
             val angle = arcDistance / geom.radius  // 0 to π
-            // Center of semi-circle: (centerX, centerY + halfStraight)
             Offset(
                 centerX + geom.radius * cos(angle),
-                centerY + geom.halfStraight + geom.radius * sin(angle)
+                adjustedCenterY + geom.halfStraight + geom.radius * sin(angle)
             )
         }
         distance < seg3End -> {
-            // Left straight, going up (from centerY + halfStraight to centerY - halfStraight)
+            // Left straight, going up
             val straightDistance = distance - seg2End
-            Offset(centerX - geom.halfWidth, centerY + geom.halfStraight - straightDistance)
+            Offset(centerX - geom.halfWidth, adjustedCenterY + geom.halfStraight - straightDistance)
         }
         distance < seg4End -> {
             // Top semi-circle (left to right, going through top)
             val arcDistance = distance - seg3End
             val angle = PI.toFloat() + arcDistance / geom.radius  // π to 2π
-            // Center of semi-circle: (centerX, centerY - halfStraight)
             Offset(
                 centerX + geom.radius * cos(angle),
-                centerY - geom.halfStraight + geom.radius * sin(angle)
+                adjustedCenterY - geom.halfStraight + geom.radius * sin(angle)
             )
         }
         else -> {
-            // Right straight, going down from top to middle (from centerY - halfStraight to centerY)
+            // Right straight, going down from top to middle
             val straightDistance = distance - seg4End
-            Offset(centerX + geom.halfWidth, centerY - geom.halfStraight + straightDistance)
+            Offset(centerX + geom.halfWidth, adjustedCenterY - geom.halfStraight + straightDistance)
         }
     }
 }
@@ -481,7 +500,7 @@ fun findClaimableChair(
     centerX: Float,
     centerY: Float
 ): Chair? {
-    val segment = getPathSegment(player.position)
+    val segment = getPathSegment(player.position, chairs)
 
     // Can only claim chairs on straight segments
     if (segment != PathSegment.LEFT_STRAIGHT && segment != PathSegment.RIGHT_STRAIGHT) {
@@ -489,7 +508,7 @@ fun findClaimableChair(
     }
 
     val column = if (segment == PathSegment.RIGHT_STRAIGHT) 1 else 0
-    val playerPos = getOvalPosition(player.position, centerX, centerY)
+    val playerPos = getOvalPosition(player.position, centerX, centerY, chairs)
     val tolerance = CHAIR_HEIGHT / 2 + PLAYER_RADIUS  // Y tolerance for alignment
 
     val activeChairs = chairs.filter { !it.isRemoved && it.column == column }
@@ -503,15 +522,11 @@ fun findClaimableChair(
 
 
 fun seatPlayersOnChairs(players: List<Player>, chairs: List<Chair>): List<Player> {
-    val activeChairs = chairs.filter { !it.isRemoved }
-    val activePlayers = players.filter { !it.isEliminated }
-
+    // Keep players on their current chairs, just reset the lap tracking
     return players.map { player ->
-        if (!player.isEliminated) {
-            val index = activePlayers.indexOf(player)
-            if (index < activeChairs.size) {
-                player.copy(isSitting = true, chairIndex = activeChairs[index].id, startPositionWhenStopped = -1f)
-            } else player
+        if (!player.isEliminated && player.isSitting) {
+            // Player already has a chair, just reset lap tracking
+            player.copy(startPositionWhenStopped = -1f)
         } else player
     }
 }
@@ -544,10 +559,10 @@ fun DrawScope.drawPlayers(
                 if (chair != null) {
                     getChairPosition(chair, centerX, centerY)
                 } else {
-                    getOvalPosition(player.position, centerX, centerY)
+                    getOvalPosition(player.position, centerX, centerY, chairs)
                 }
             } else {
-                getOvalPosition(player.position, centerX, centerY)
+                getOvalPosition(player.position, centerX, centerY, chairs)
             }
 
             drawCircle(
