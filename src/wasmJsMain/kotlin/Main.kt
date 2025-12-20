@@ -59,7 +59,10 @@ data class Player(
     val isEliminated: Boolean = false,
     val isSitting: Boolean = true,
     val chairIndex: Int = -1,
-    val startPositionWhenStopped: Float = -1f  // Track starting position for lap detection
+    val startPositionWhenStopped: Float = -1f,  // Track starting position for lap detection
+    val eliminationAnimationProgress: Float = 0f,  // 0 = start, 1 = at eliminated area
+    val eliminationStartX: Float = 0f,  // X position when eliminated
+    val eliminationStartY: Float = 0f   // Y position when eliminated
 )
 
 // Enum to identify which segment of the stadium path a player is on
@@ -125,8 +128,14 @@ fun MusicalChairsGame() {
 
                             // Check if player completed a full lap without finding a chair
                             if (hasCompletedLap(newPosition, player.startPositionWhenStopped, previousPosition)) {
+                                val elimPos = getOvalPosition(newPosition, centerX, centerY, chairs)
                                 eliminatedPlayer = player
-                                player.copy(position = newPosition, isEliminated = true)
+                                player.copy(
+                                    position = newPosition,
+                                    isEliminated = true,
+                                    eliminationStartX = elimPos.x,
+                                    eliminationStartY = elimPos.y
+                                )
                             } else {
                                 player.copy(position = newPosition)
                             }
@@ -170,26 +179,44 @@ fun MusicalChairsGame() {
                         if (allChairsFilled && eliminatedPlayer == null) {
                             val playerWithoutChair = players.find { !it.isEliminated && !it.isSitting }
                             if (playerWithoutChair != null) {
+                                val elimPos = getOvalPosition(playerWithoutChair.position, centerX, centerY, chairs)
                                 players = players.map { player ->
                                     if (player.id == playerWithoutChair.id) {
-                                        player.copy(isEliminated = true)
+                                        player.copy(
+                                            isEliminated = true,
+                                            eliminationStartX = elimPos.x,
+                                            eliminationStartY = elimPos.y
+                                        )
                                     } else player
                                 }
                             }
                         }
 
                         gameState = GameState.ELIMINATING
+                    }
+                }
+            } else if (gameState == GameState.ELIMINATING) {
+                // Animate the eliminated player moving to the side
+                val animationSpeed = 0.03f  // Adjust for faster/slower animation
+                var animationComplete = true
 
-                        kotlinx.coroutines.delay(1000)
+                players = players.map { player ->
+                    if (player.isEliminated && player.eliminationAnimationProgress < 1f) {
+                        animationComplete = false
+                        player.copy(
+                            eliminationAnimationProgress = (player.eliminationAnimationProgress + animationSpeed).coerceAtMost(1f)
+                        )
+                    } else player
+                }
 
-                        val activePlayerCount = players.count { !it.isEliminated }
-                        if (activePlayerCount <= 1) {
-                            gameState = GameState.GAME_OVER
-                        } else {
-                            // Reset for next round - seat remaining players on chairs
-                            players = seatPlayersOnChairs(players, chairs)
-                            gameState = GameState.WAITING
-                        }
+                if (animationComplete) {
+                    val activePlayerCount = players.count { !it.isEliminated }
+                    if (activePlayerCount <= 1) {
+                        gameState = GameState.GAME_OVER
+                    } else {
+                        // Reset for next round - seat remaining players on chairs
+                        players = seatPlayersOnChairs(players, chairs)
+                        gameState = GameState.WAITING
                     }
                 }
             }
@@ -592,21 +619,35 @@ fun DrawScope.drawPlayers(
     }
 }
 
+// Easing function for smooth animation (ease-out cubic)
+fun easeOutCubic(t: Float): Float {
+    val t1 = 1 - t
+    return 1 - t1 * t1 * t1
+}
+
 fun DrawScope.drawEliminatedPlayers(players: List<Player>, screenWidth: Float, textMeasurer: TextMeasurer) {
     val eliminatedPlayers = players.filter { it.isEliminated }
-    val startX = screenWidth - 60
+    val targetX = screenWidth - 60
     val startY = 50f
 
+    // Draw background for eliminated players area
     if (eliminatedPlayers.isNotEmpty()) {
         drawRect(
             color = EliminatedAreaColor,
-            topLeft = Offset(startX - 30, startY - 30),
+            topLeft = Offset(targetX - 30, startY - 30),
             size = Size(70f, eliminatedPlayers.size * 45f + 40f)
         )
     }
 
     eliminatedPlayers.forEachIndexed { index, player ->
-        val position = Offset(startX, startY + index * 45f)
+        val targetY = startY + index * 45f
+
+        // Interpolate position based on animation progress
+        val progress = easeOutCubic(player.eliminationAnimationProgress)
+        val currentX = player.eliminationStartX + (targetX - player.eliminationStartX) * progress
+        val currentY = player.eliminationStartY + (targetY - player.eliminationStartY) * progress
+        val position = Offset(currentX, currentY)
+
         drawCircle(
             color = player.color,
             radius = PLAYER_RADIUS,
