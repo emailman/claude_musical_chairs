@@ -59,7 +59,7 @@ data class Player(
     val isEliminated: Boolean = false,
     val isSitting: Boolean = true,
     val chairIndex: Int = -1,
-    val startPositionWhenStopped: Float = -1f,  // Track starting position for lap detection
+    val startPositionWhenStopped: Float = -1f,  // Track the starting position for lap detection
     val eliminationAnimationProgress: Float = 0f,  // 0 = start, 1 = at eliminated area
     val eliminationStartX: Float = 0f,  // X position when eliminated
     val eliminationStartY: Float = 0f   // Y position when eliminated
@@ -100,7 +100,7 @@ fun MusicalChairsGame() {
     var players by remember { mutableStateOf(createInitialPlayers()) }
     var chairs by remember { mutableStateOf(createInitialChairs()) }
 
-    // Animation loop - use Unit key so coroutine isn't cancelled on state changes
+    // Animation loop - use a Unit key so the coroutine isn't canceled on state changes
     LaunchedEffect(Unit) {
         while (true) {
             if (gameState == GameState.PLAYING || gameState == GameState.STOPPING) {
@@ -126,7 +126,7 @@ fun MusicalChairsGame() {
                             val previousPosition = player.position
                             val newPosition = (player.position + step) % 1f
 
-                            // Check if player completed a full lap without finding a chair
+                            // Check if the player completed a full lap without finding a chair
                             if (hasCompletedLap(newPosition, player.startPositionWhenStopped, previousPosition)) {
                                 val elimPos = getOvalPosition(newPosition, centerX, centerY, chairs)
                                 eliminatedPlayer = player
@@ -144,7 +144,7 @@ fun MusicalChairsGame() {
 
                     // Second pass: check for chair claiming (only if no one was eliminated yet)
                     if (eliminatedPlayer == null) {
-                        // Process players in order of their position to handle "first to arrive" rule
+                        // Process players in order of their position to handle the "first to arrive" rule
                         val activePlayers = players.filter { !it.isEliminated && !it.isSitting }
                             .sortedBy { it.position }
 
@@ -168,7 +168,7 @@ fun MusicalChairsGame() {
                         }
                     }
 
-                    // Check if round should end
+                    // Check if the round should end
                     val activeChairs = chairs.filter { !it.isRemoved }
                     val allChairsFilled = activeChairs.all { chair -> isChairOccupied(chair, players) }
                     val someoneEliminated = eliminatedPlayer != null
@@ -378,7 +378,7 @@ fun getChairPosition(chair: Chair, centerX: Float, centerY: Float): Offset {
 
 // Stadium path geometry constants - adjusts based on remaining chairs
 fun getStadiumGeometry(chairs: List<Chair>): StadiumGeometry {
-    // Chairs are at centerX ± 60, so path should be outside that
+    // Chairs are at centerX ± 60, so the path should be outside that
     // Using halfWidth = 100 puts the path at centerX ± 100
     val halfWidth = 100f
 
@@ -391,7 +391,7 @@ fun getStadiumGeometry(chairs: List<Chair>): StadiumGeometry {
     val minRow = activeRows.minOrNull() ?: 0
     val maxRow = activeRows.maxOrNull() ?: 4
 
-    // Calculate Y extent of remaining chairs
+    // Calculate the Y extent of remaining chairs
     val topY = (2 - maxRow) * CHAIR_SPACING  // Most negative Y (top of screen)
     val bottomY = (2 - minRow) * CHAIR_SPACING  // Most positive Y (bottom of screen)
 
@@ -402,21 +402,20 @@ fun getStadiumGeometry(chairs: List<Chair>): StadiumGeometry {
 
     val straightLength = halfStraight * 2
 
-    // Semi-circle radius must equal halfWidth for smooth path connection
+    // Semicircle radius must equal halfWidth for smooth path connection
     val radius = halfWidth  // 100
 
     val perimeter = 2 * straightLength + 2 * PI.toFloat() * radius
 
-    // Segment boundaries as proportions of total path (0 to 1)
+    // Segment boundaries as proportions of the total path (0 to 1)
     val seg1Len = halfStraight
     val seg2Len = PI.toFloat() * radius
-    val seg3Len = straightLength
     val seg4Len = PI.toFloat() * radius
 
     val seg1End = seg1Len / perimeter
     val seg2End = (seg1Len + seg2Len) / perimeter
-    val seg3End = (seg1Len + seg2Len + seg3Len) / perimeter
-    val seg4End = (seg1Len + seg2Len + seg3Len + seg4Len) / perimeter
+    val seg3End = (seg1Len + seg2Len + straightLength) / perimeter
+    val seg4End = (seg1Len + seg2Len + straightLength + seg4Len) / perimeter
 
     // Also store the center offset (midpoint between top and bottom chairs)
     val centerOffset = (topY + bottomY) / 2
@@ -431,10 +430,10 @@ data class StadiumGeometry(
     val halfStraight: Float,
     val perimeter: Float,
     val seg1End: Float,  // End of right straight (middle to bottom)
-    val seg2End: Float,  // End of bottom semi-circle
+    val seg2End: Float,  // End of bottom semicircle
     val seg3End: Float,  // End of left straight (bottom to top)
-    val seg4End: Float,  // End of top semi-circle
-    val centerOffset: Float = 0f  // Vertical offset to center path on remaining chairs
+    val seg4End: Float,  // End of the top semicircle
+    val centerOffset: Float = 0f  // Vertical offset to the center path on remaining chairs
 )
 
 fun getPathSegment(t: Float, chairs: List<Chair>): PathSegment {
@@ -452,7 +451,7 @@ fun getOvalPosition(t: Float, centerX: Float, centerY: Float, chairs: List<Chair
     val geom = getStadiumGeometry(chairs)
     val distance = t * geom.perimeter
 
-    // Apply center offset to shift path vertically based on remaining chairs
+    // Apply center offset to shift the path vertically based on remaining chairs
     val adjustedCenterY = centerY + geom.centerOffset
 
     // Segment lengths
@@ -461,19 +460,18 @@ fun getOvalPosition(t: Float, centerX: Float, centerY: Float, chairs: List<Chair
     val seg3Len = geom.straightLength
     val seg4Len = PI.toFloat() * geom.radius
 
-    val seg1End = seg1Len
-    val seg2End = seg1End + seg2Len
+    val seg2End = seg1Len + seg2Len
     val seg3End = seg2End + seg3Len
     val seg4End = seg3End + seg4Len
 
     return when {
-        distance < seg1End -> {
-            // Right straight, going down from middle
+        distance < seg1Len -> {
+            // Right straight, going down from the middle
             Offset(centerX + geom.halfWidth, adjustedCenterY + distance)
         }
         distance < seg2End -> {
-            // Bottom semi-circle (right to left, going through bottom)
-            val arcDistance = distance - seg1End
+            // Bottom semicircle (right to left, going through bottom)
+            val arcDistance = distance - seg1Len
             val angle = arcDistance / geom.radius  // 0 to π
             Offset(
                 centerX + geom.radius * cos(angle),
@@ -486,7 +484,7 @@ fun getOvalPosition(t: Float, centerX: Float, centerY: Float, chairs: List<Chair
             Offset(centerX - geom.halfWidth, adjustedCenterY + geom.halfStraight - straightDistance)
         }
         distance < seg4End -> {
-            // Top semi-circle (left to right, going through top)
+            // Top semicircle (left to right, going through top)
             val arcDistance = distance - seg3End
             val angle = PI.toFloat() + arcDistance / geom.radius  // π to 2π
             Offset(
@@ -508,11 +506,11 @@ fun isChairOccupied(chair: Chair, players: List<Player>): Boolean {
     return players.any { !it.isEliminated && it.isSitting && it.chairIndex == chair.id }
 }
 
-// Check if player has completed a full lap since music stopped
+// Check if the player has completed a full lap since music stopped
 fun hasCompletedLap(currentPosition: Float, startPosition: Float, previousPosition: Float): Boolean {
     if (startPosition < 0) return false
     // Detect if we've crossed the start position (wrapped around)
-    // This happens when previous position was just before start and current is just after
+    // This happens when the previous position was just before start and the current is just after
     val crossedForward = previousPosition < startPosition && currentPosition >= startPosition && (currentPosition - previousPosition) < 0.5f
     val crossedWrap = previousPosition > 0.9f && currentPosition < 0.1f && startPosition > previousPosition
     val crossedWrap2 = previousPosition > 0.9f && currentPosition < 0.1f && startPosition < currentPosition
@@ -592,29 +590,7 @@ fun DrawScope.drawPlayers(
                 getOvalPosition(player.position, centerX, centerY, chairs)
             }
 
-            drawCircle(
-                color = player.color,
-                radius = PLAYER_RADIUS,
-                center = position
-            )
-
-            // Draw player number
-            val numberText = (player.id + 1).toString()
-            val textLayoutResult = textMeasurer.measure(
-                text = numberText,
-                style = TextStyle(
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            )
-            drawText(
-                textLayoutResult = textLayoutResult,
-                topLeft = Offset(
-                    position.x - textLayoutResult.size.width / 2,
-                    position.y - textLayoutResult.size.height / 2
-                )
-            )
+            drawPlayerWithNumber(player, position, textMeasurer)
         }
     }
 }
@@ -623,6 +599,31 @@ fun DrawScope.drawPlayers(
 fun easeOutCubic(t: Float): Float {
     val t1 = 1 - t
     return 1 - t1 * t1 * t1
+}
+
+fun DrawScope.drawPlayerWithNumber(player: Player, position: Offset, textMeasurer: TextMeasurer) {
+    drawCircle(
+        color = player.color,
+        radius = PLAYER_RADIUS,
+        center = position
+    )
+
+    val numberText = (player.id + 1).toString()
+    val textLayoutResult = textMeasurer.measure(
+        text = numberText,
+        style = TextStyle(
+            color = Color.White,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold
+        )
+    )
+    drawText(
+        textLayoutResult = textLayoutResult,
+        topLeft = Offset(
+            position.x - textLayoutResult.size.width / 2,
+            position.y - textLayoutResult.size.height / 2
+        )
+    )
 }
 
 fun DrawScope.drawEliminatedPlayers(players: List<Player>, screenWidth: Float, textMeasurer: TextMeasurer) {
@@ -648,28 +649,6 @@ fun DrawScope.drawEliminatedPlayers(players: List<Player>, screenWidth: Float, t
         val currentY = player.eliminationStartY + (targetY - player.eliminationStartY) * progress
         val position = Offset(currentX, currentY)
 
-        drawCircle(
-            color = player.color,
-            radius = PLAYER_RADIUS,
-            center = position
-        )
-
-        // Draw player number
-        val numberText = (player.id + 1).toString()
-        val textLayoutResult = textMeasurer.measure(
-            text = numberText,
-            style = TextStyle(
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
-        )
-        drawText(
-            textLayoutResult = textLayoutResult,
-            topLeft = Offset(
-                position.x - textLayoutResult.size.width / 2,
-                position.y - textLayoutResult.size.height / 2
-            )
-        )
+        drawPlayerWithNumber(player, position, textMeasurer)
     }
 }
