@@ -1,0 +1,26 @@
+Musical Chairs Game Specification
+
+Setup:
+- 2 columns of 5 chairs (10 total), same color
+- 10 players as different colored circles, start sitting on chairs (one player per chair)
+- Eliminated players column on the side of the screen
+
+Game Loop:
+- Button click starts music, players circulate in oval path around chairs, one chair removed from bottom row (color changes to match background)
+- Button click stops music, players continue moving until they reach the next chair position
+- Odd chairs/even players: player at removed chair position is eliminated
+- Even chairs/odd players: player not next to a chair position is eliminated
+- Eliminated player moves to side column
+- Remaining players sit on chairs (circle appears on top of chair) until next round
+- Repeat until one winner remains
+
+Visual Elements:
+- Chair color: to be chosen
+- Player colors: 10 different colors
+- Background color: to be chosen
+- Animation speed: to be chosen
+- Music: mp3 file to be provided later
+- Window size: to be chosen
+- No special visual for winner
+
+Is this complete, or are there more details to add before building?

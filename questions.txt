@@ -1,0 +1,13 @@
+Questions before building the app:
+
+1. When music stops, do players stop exactly where they are, or animate to the nearest chair position?
+
+2. How is "sitting" shown visually? Player circle on top of the chair, or overlapping it?
+
+3. For even chairs/odd players case: how is the eliminated player determined? The one furthest from any chair?
+
+4. After elimination, do remaining players return to sitting on chairs before the next round starts?
+
+5. Any special visual effect for the winner at the end?
+
+6. Preferred window size?
