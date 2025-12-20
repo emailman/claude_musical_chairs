@@ -16,12 +16,11 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.CanvasBasedWindow
-import kotlinx.browser.document
 import org.w3c.dom.Audio
 import kotlin.math.PI
 import kotlin.math.cos
@@ -165,10 +164,13 @@ fun MusicalChairsGame() {
                             .sortedBy { it.position }
 
                         val claimedChairs = mutableSetOf<Int>()
-                        val playerUpdates = mutableMapOf<Int, Pair<Boolean, Int>>()  // playerId -> (isSitting, chairIndex)
+
+                        // playerId -> (isSitting, chairIndex)
+                        val playerUpdates = mutableMapOf<Int, Pair<Boolean, Int>>()
 
                         for (player in activePlayers) {
-                            val claimableChair = findClaimableChair(player, chairs, players, centerX, centerY)
+                            val claimableChair =
+                                findClaimableChair(player, chairs, players, centerX, centerY)
                             if (claimableChair != null && claimableChair.id !in claimedChairs) {
                                 claimedChairs.add(claimableChair.id)
                                 playerUpdates[player.id] = Pair(true, claimableChair.id)
@@ -266,14 +268,23 @@ fun MusicalChairsGame() {
         }
 
         // Title and status
-        Text(
-            text = "Musical Chairs - Players: $activePlayerCount | Chairs: $activeChairCount",
-            color = Color.White,
-            fontSize = 24.sp,
+        Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(20.dp)
-        )
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Musical Chairs By Claude and Eric",
+                color = Color.White,
+                fontSize = 24.sp
+            )
+            Text(
+                text = "Players: $activePlayerCount | Chairs: $activeChairCount",
+                color = Color.White,
+                fontSize = 20.sp
+            )
+        }
 
         // Control button
         Column(
@@ -497,7 +508,8 @@ fun getOvalPosition(t: Float, centerX: Float, centerY: Float, chairs: List<Chair
         distance < seg3End -> {
             // Left straight, going up
             val straightDistance = distance - seg2End
-            Offset(centerX - geom.halfWidth, adjustedCenterY + geom.halfStraight - straightDistance)
+            Offset(centerX - geom.halfWidth,
+                adjustedCenterY + geom.halfStraight - straightDistance)
         }
         distance < seg4End -> {
             // Top semicircle (left to right, going through top)
@@ -511,7 +523,8 @@ fun getOvalPosition(t: Float, centerX: Float, centerY: Float, chairs: List<Chair
         else -> {
             // Right straight, going down from top to middle
             val straightDistance = distance - seg4End
-            Offset(centerX + geom.halfWidth, adjustedCenterY - geom.halfStraight + straightDistance)
+            Offset(centerX + geom.halfWidth,
+                adjustedCenterY - geom.halfStraight + straightDistance)
         }
     }
 }
@@ -527,9 +540,15 @@ fun hasCompletedLap(currentPosition: Float, startPosition: Float, previousPositi
     if (startPosition < 0) return false
     // Detect if we've crossed the start position (wrapped around)
     // This happens when the previous position was just before start and the current is just after
-    val crossedForward = previousPosition < startPosition && currentPosition >= startPosition && (currentPosition - previousPosition) < 0.5f
-    val crossedWrap = previousPosition > 0.9f && currentPosition < 0.1f && startPosition > previousPosition
-    val crossedWrap2 = previousPosition > 0.9f && currentPosition < 0.1f && startPosition < currentPosition
+    val crossedForward = previousPosition < startPosition &&
+            currentPosition >= startPosition &&
+            (currentPosition - previousPosition) < 0.5f
+    val crossedWrap = previousPosition > 0.9f &&
+            currentPosition < 0.1f &&
+            startPosition > previousPosition
+    val crossedWrap2 = previousPosition > 0.9f &&
+            currentPosition < 0.1f &&
+            startPosition < currentPosition
     return crossedForward || crossedWrap || crossedWrap2
 }
 
