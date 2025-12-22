@@ -47,9 +47,9 @@ val PlayerColors = listOf(
 
 // Game constants
 const val TOTAL_CHAIRS = 10
-const val CHAIR_WIDTH = 50f
-const val CHAIR_HEIGHT = 40f
-const val PLAYER_RADIUS = 18f
+const val CHAIR_WIDTH = 60f
+const val CHAIR_HEIGHT = 48f
+const val PLAYER_RADIUS = 21.6f
 const val CHAIR_SPACING = 80f
 const val COLUMN_GAP = 70f
 
@@ -648,7 +648,7 @@ fun DrawScope.drawPlayerWithNumber(player: Player, position: Offset, textMeasure
         text = numberText,
         style = TextStyle(
             color = Color.White,
-            fontSize = 14.sp,
+            fontSize = 16.8.sp,
             fontWeight = FontWeight.Bold
         )
     )
