@@ -60,8 +60,12 @@ data class Player(
     val isEliminated: Boolean = false,
     val isSitting: Boolean = true,
     val chairIndex: Int = -1,
-    val startPositionWhenStopped: Float = -1f,  // Track the starting position for lap detection
-    val eliminationAnimationProgress: Float = 0f,  // 0 = start, 1 = at eliminated area
+    // Track the starting position for lap detection
+    val startPositionWhenStopped: Float = -1f,
+
+    // 0 = start, 1 = at eliminated area
+    val eliminationAnimationProgress: Float = 0f,
+
     val eliminationStartX: Float = 0f,  // X position when eliminated
     val eliminationStartY: Float = 0f   // Y position when eliminated
 )
@@ -115,10 +119,12 @@ fun MusicalChairsGame() {
         }
     }
 
-    // Animation loop - use a Unit key so the coroutine isn't canceled on state changes
+    // Animation loop
+    // Use a Unit key so the coroutine isn't canceled on state changes
     LaunchedEffect(Unit) {
         while (true) {
-            if (gameState == GameState.PLAYING || gameState == GameState.STOPPING) {
+            if (gameState == GameState.PLAYING ||
+                gameState == GameState.STOPPING) {
                 if (gameState == GameState.PLAYING) {
                     // Normal movement around the oval
                     players = players.map { player ->
@@ -142,8 +148,11 @@ fun MusicalChairsGame() {
                             val newPosition = (player.position + step) % 1f
 
                             // Check if the player completed a full lap without finding a chair
-                            if (hasCompletedLap(newPosition, player.startPositionWhenStopped, previousPosition)) {
-                                val elimPos = getOvalPosition(newPosition, centerX, centerY, chairs)
+                            if (hasCompletedLap(newPosition,
+                                    player.startPositionWhenStopped,
+                                    previousPosition)) {
+                                val elimPos =
+                                    getOvalPosition(newPosition, centerX, centerY, chairs)
                                 eliminatedPlayer = player
                                 player.copy(
                                     position = newPosition,
@@ -159,7 +168,8 @@ fun MusicalChairsGame() {
 
                     // Second pass: check for chair claiming (only if no one was eliminated yet)
                     if (eliminatedPlayer == null) {
-                        // Process players in order of their position to handle the "first to arrive" rule
+                        // Process players in order of their position to
+                        // handle the "first to arrive" rule
                         val activePlayers = players.filter { !it.isEliminated && !it.isSitting }
                             .sortedBy { it.position }
 
@@ -188,16 +198,20 @@ fun MusicalChairsGame() {
 
                     // Check if the round should end
                     val activeChairs = chairs.filter { !it.isRemoved }
-                    val allChairsFilled = activeChairs.all { chair -> isChairOccupied(chair, players) }
+                    val allChairsFilled =
+                        activeChairs.all { chair -> isChairOccupied(chair, players) }
                     val someoneEliminated = eliminatedPlayer != null
 
                     if (someoneEliminated || allChairsFilled) {
                         // If all chairs filled but no one was eliminated by lap completion,
                         // find and eliminate the player who doesn't have a chair
                         if (allChairsFilled && eliminatedPlayer == null) {
-                            val playerWithoutChair = players.find { !it.isEliminated && !it.isSitting }
+                            val playerWithoutChair =
+                                players.find { !it.isEliminated && !it.isSitting }
                             if (playerWithoutChair != null) {
-                                val elimPos = getOvalPosition(playerWithoutChair.position, centerX, centerY, chairs)
+                                val elimPos =
+                                    getOvalPosition(playerWithoutChair.position,
+                                        centerX, centerY, chairs)
                                 players = players.map { player ->
                                     if (player.id == playerWithoutChair.id) {
                                         player.copy(
@@ -209,7 +223,6 @@ fun MusicalChairsGame() {
                                 }
                             }
                         }
-
                         gameState = GameState.ELIMINATING
                     }
                 }
@@ -222,7 +235,9 @@ fun MusicalChairsGame() {
                     if (player.isEliminated && player.eliminationAnimationProgress < 1f) {
                         animationComplete = false
                         player.copy(
-                            eliminationAnimationProgress = (player.eliminationAnimationProgress + animationSpeed).coerceAtMost(1f)
+                            eliminationAnimationProgress =
+                                (player.eliminationAnimationProgress +
+                                        animationSpeed).coerceAtMost(1f)
                         )
                     } else player
                 }
@@ -238,7 +253,6 @@ fun MusicalChairsGame() {
                     }
                 }
             }
-
             kotlinx.coroutines.delay(16)
         }
     }
@@ -303,7 +317,8 @@ fun MusicalChairsGame() {
                             gameState = GameState.PLAYING
                         }
                         GameState.PLAYING -> {
-                            // Record each player's position when music stops for lap tracking
+                            // Record each player's position when
+                            // music stops for lap tracking
                             players = players.map { player ->
                                 if (!player.isEliminated && !player.isSitting) {
                                     player.copy(startPositionWhenStopped = player.position)
@@ -320,7 +335,8 @@ fun MusicalChairsGame() {
                     }
                 },
                 colors = ButtonDefaults.buttonColors(backgroundColor = ButtonColor),
-                enabled = gameState in listOf(GameState.WAITING, GameState.PLAYING, GameState.GAME_OVER)
+                enabled = gameState in listOf(GameState.WAITING,
+                    GameState.PLAYING, GameState.GAME_OVER)
             ) {
                 Text(
                     text = when (gameState) {
@@ -419,8 +435,10 @@ fun getStadiumGeometry(chairs: List<Chair>): StadiumGeometry {
     val maxRow = activeRows.maxOrNull() ?: 4
 
     // Calculate the Y extent of remaining chairs
-    val topY = (2 - maxRow) * CHAIR_SPACING  // Most negative Y (top of screen)
-    val bottomY = (2 - minRow) * CHAIR_SPACING  // Most positive Y (bottom of screen)
+    // Most negative Y (top of screen)
+    val topY = (2 - maxRow) * CHAIR_SPACING
+    // Most positive Y (bottom of screen)
+    val bottomY = (2 - minRow) * CHAIR_SPACING
 
     // halfStraight should cover from topY to bottomY plus buffer
     val chairExtent = (bottomY - topY) / 2
@@ -429,7 +447,8 @@ fun getStadiumGeometry(chairs: List<Chair>): StadiumGeometry {
 
     val straightLength = halfStraight * 2
 
-    // Semicircle radius must equal halfWidth for smooth path connection
+    // Semicircle radius must equal halfWidth
+    // for smooth path connection
     val radius = halfWidth  // 100
 
     val perimeter = 2 * straightLength + 2 * PI.toFloat() * radius
@@ -447,7 +466,9 @@ fun getStadiumGeometry(chairs: List<Chair>): StadiumGeometry {
     // Also store the center offset (midpoint between top and bottom chairs)
     val centerOffset = (topY + bottomY) / 2
 
-    return StadiumGeometry(halfWidth, radius, straightLength, halfStraight, perimeter, seg1End, seg2End, seg3End, seg4End, centerOffset)
+    return StadiumGeometry(halfWidth, radius, straightLength,
+        halfStraight, perimeter, seg1End, seg2End, seg3End, seg4End,
+        centerOffset)
 }
 
 data class StadiumGeometry(
@@ -474,11 +495,13 @@ fun getPathSegment(t: Float, chairs: List<Chair>): PathSegment {
     }
 }
 
-fun getOvalPosition(t: Float, centerX: Float, centerY: Float, chairs: List<Chair>): Offset {
+fun getOvalPosition(t: Float, centerX: Float, centerY: Float,
+                    chairs: List<Chair>): Offset {
     val geom = getStadiumGeometry(chairs)
     val distance = t * geom.perimeter
 
-    // Apply center offset to shift the path vertically based on remaining chairs
+    // Apply center offset to shift the path vertically
+    // based on remaining chairs
     val adjustedCenterY = centerY + geom.centerOffset
 
     // Segment lengths
@@ -529,17 +552,20 @@ fun getOvalPosition(t: Float, centerX: Float, centerY: Float, chairs: List<Chair
     }
 }
 
-
 // Check if a chair is currently occupied by a sitting player
 fun isChairOccupied(chair: Chair, players: List<Player>): Boolean {
-    return players.any { !it.isEliminated && it.isSitting && it.chairIndex == chair.id }
+    return players.any { !it.isEliminated &&
+            it.isSitting && it.chairIndex == chair.id }
 }
 
 // Check if the player has completed a full lap since music stopped
-fun hasCompletedLap(currentPosition: Float, startPosition: Float, previousPosition: Float): Boolean {
+fun hasCompletedLap(currentPosition: Float, startPosition: Float,
+                    previousPosition: Float): Boolean {
     if (startPosition < 0) return false
+
     // Detect if we've crossed the start position (wrapped around)
-    // This happens when the previous position was just before start and the current is just after
+    // This happens when the previous position was just before start
+    // and the current is just after
     val crossedForward = previousPosition < startPosition &&
             currentPosition >= startPosition &&
             (currentPosition - previousPosition) < 0.5f
@@ -563,13 +589,16 @@ fun findClaimableChair(
     val segment = getPathSegment(player.position, chairs)
 
     // Can only claim chairs on straight segments
-    if (segment != PathSegment.LEFT_STRAIGHT && segment != PathSegment.RIGHT_STRAIGHT) {
+    if (segment != PathSegment.LEFT_STRAIGHT &&
+        segment != PathSegment.RIGHT_STRAIGHT) {
         return null
     }
 
     val column = if (segment == PathSegment.RIGHT_STRAIGHT) 1 else 0
-    val playerPos = getOvalPosition(player.position, centerX, centerY, chairs)
-    val tolerance = CHAIR_HEIGHT / 2 + PLAYER_RADIUS  // Y tolerance for alignment
+    val playerPos =
+        getOvalPosition(player.position, centerX, centerY, chairs)
+    val tolerance =
+        CHAIR_HEIGHT / 2 + PLAYER_RADIUS  // Y tolerance for alignment
 
     val activeChairs = chairs.filter { !it.isRemoved && it.column == column }
 
@@ -636,7 +665,8 @@ fun easeOutCubic(t: Float): Float {
     return 1 - t1 * t1 * t1
 }
 
-fun DrawScope.drawPlayerWithNumber(player: Player, position: Offset, textMeasurer: TextMeasurer) {
+fun DrawScope.drawPlayerWithNumber(player: Player, position: Offset,
+                                   textMeasurer: TextMeasurer) {
     drawCircle(
         color = player.color,
         radius = PLAYER_RADIUS,
@@ -661,7 +691,8 @@ fun DrawScope.drawPlayerWithNumber(player: Player, position: Offset, textMeasure
     )
 }
 
-fun DrawScope.drawEliminatedPlayers(players: List<Player>, screenWidth: Float, textMeasurer: TextMeasurer) {
+fun DrawScope.drawEliminatedPlayers(players: List<Player>, screenWidth: Float,
+                                    textMeasurer: TextMeasurer) {
     val eliminatedPlayers = players.filter { it.isEliminated }
     val targetX = screenWidth - 60
     val startY = 50f
