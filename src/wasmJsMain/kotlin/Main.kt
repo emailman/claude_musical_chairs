@@ -68,7 +68,8 @@ data class Player(
     val eliminationAnimationProgress: Float = 0f,
 
     val eliminationStartX: Float = 0f,  // X position when eliminated
-    val eliminationStartY: Float = 0f   // Y position when eliminated
+    val eliminationStartY: Float = 0f,  // Y position when eliminated
+    val eliminationOrder: Int = -1      // Order in which player was eliminated (0 = first)
 )
 
 // Enum to identify which segment of the stadium path a player is on
@@ -225,6 +226,9 @@ fun MusicalChairsGame() {
                 val hasPendingPlayer = players.any { it.isPendingElimination && !it.isEliminated }
 
                 if (hasPendingPlayer) {
+                    // Count already eliminated players to determine elimination order
+                    val currentEliminationCount = players.count { it.isEliminated }
+
                     players = players.map { player ->
                         if (player.isPendingElimination && !player.isEliminated) {
                             val newPosition = (player.position + step) % 1f
@@ -241,7 +245,8 @@ fun MusicalChairsGame() {
                                     position = newPosition,
                                     isEliminated = true,
                                     eliminationStartX = elimPos.x,
-                                    eliminationStartY = elimPos.y
+                                    eliminationStartY = elimPos.y,
+                                    eliminationOrder = currentEliminationCount
                                 )
                             } else {
                                 player.copy(position = newPosition)
@@ -716,7 +721,8 @@ fun DrawScope.drawPlayerWithNumber(player: Player, position: Offset,
 
 fun DrawScope.drawEliminatedPlayers(players: List<Player>, screenWidth: Float,
                                     textMeasurer: TextMeasurer) {
-    val eliminatedPlayers = players.filter { it.isEliminated }
+    // Sort by elimination order so newest eliminated player appears at the bottom
+    val eliminatedPlayers = players.filter { it.isEliminated }.sortedBy { it.eliminationOrder }
     val targetX = screenWidth - 90
     val startY = 75f
 
