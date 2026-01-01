@@ -47,9 +47,9 @@ val PlayerColors = listOf(
 
 // Game constants
 const val TOTAL_CHAIRS = 10
-const val CHAIR_WIDTH = 60f
-const val CHAIR_HEIGHT = 48f
-const val PLAYER_RADIUS = 21.6f
+const val CHAIR_WIDTH = 90f
+const val CHAIR_HEIGHT = 72f
+const val PLAYER_RADIUS = 32.4f
 const val CHAIR_SPACING = 80f
 const val COLUMN_GAP = 70f
 
@@ -421,9 +421,9 @@ fun getChairPosition(chair: Chair, centerX: Float, centerY: Float): Offset {
 
 // Stadium path geometry constants - adjusts based on remaining chairs
 fun getStadiumGeometry(chairs: List<Chair>): StadiumGeometry {
-    // Chairs are at centerX ± 60, so the path should be outside that
-    // Using halfWidth = 120 puts the path at centerX ± 120 for more clearance
-    val halfWidth = 120f
+    // Chairs are at centerX ± 90, so the path should be outside that
+    // Using halfWidth = 180 puts the path at centerX ± 180 for more clearance
+    val halfWidth = 180f
 
     // Calculate the extent of remaining chairs
     val activeChairs = chairs.filter { !it.isRemoved }
@@ -678,7 +678,7 @@ fun DrawScope.drawPlayerWithNumber(player: Player, position: Offset,
         text = numberText,
         style = TextStyle(
             color = Color.White,
-            fontSize = 16.8.sp,
+            fontSize = 25.2.sp,
             fontWeight = FontWeight.Bold
         )
     )
@@ -694,20 +694,20 @@ fun DrawScope.drawPlayerWithNumber(player: Player, position: Offset,
 fun DrawScope.drawEliminatedPlayers(players: List<Player>, screenWidth: Float,
                                     textMeasurer: TextMeasurer) {
     val eliminatedPlayers = players.filter { it.isEliminated }
-    val targetX = screenWidth - 60
-    val startY = 50f
+    val targetX = screenWidth - 90
+    val startY = 75f
 
     // Draw background for eliminated players area
     if (eliminatedPlayers.isNotEmpty()) {
         drawRect(
             color = EliminatedAreaColor,
-            topLeft = Offset(targetX - 30, startY - 30),
-            size = Size(70f, eliminatedPlayers.size * 45f + 40f)
+            topLeft = Offset(targetX - 45, startY - 45),
+            size = Size(105f, eliminatedPlayers.size * 67.5f + 60f)
         )
     }
 
     eliminatedPlayers.forEachIndexed { index, player ->
-        val targetY = startY + index * 45f
+        val targetY = startY + index * 67.5f
 
         // Interpolate position based on animation progress
         val progress = easeOutCubic(player.eliminationAnimationProgress)

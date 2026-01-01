@@ -8,7 +8,7 @@ This game simulates 10 players (represented as colored circles) competing for ch
 
 ## Demo
 
-The game is deployed at: https://musicalchairs-gamma.vercel.app/
+The game is deployed at: https://claude-musical-chairs.vercel.app/
 
 ## Tech Stack
 
