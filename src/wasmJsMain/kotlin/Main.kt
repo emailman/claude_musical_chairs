@@ -234,12 +234,10 @@ fun MusicalChairsGame() {
                             val newPosition = (player.position + step) % 1f
                             val segment = getPathSegment(newPosition, chairs)
 
-                            // Check if player reached the top (TOP_SEMI segment, near the middle)
-                            val geom = getStadiumGeometry(chairs)
-                            val isAtTop = segment == PathSegment.TOP_SEMI &&
-                                newPosition > (geom.seg3End + geom.seg4End) / 2
+                            // Check if player reached the right side of the chairs
+                            val isOnRightSide = segment == PathSegment.RIGHT_STRAIGHT
 
-                            if (isAtTop) {
+                            if (isOnRightSide) {
                                 val elimPos = getOvalPosition(newPosition, centerX, centerY, chairs)
                                 player.copy(
                                     position = newPosition,
@@ -317,7 +315,7 @@ fun MusicalChairsGame() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Musical Chairs By Claude & Eric",
+                text = "Musical Chairs By Claude & Eric, Version 2.0",
                 color = Color.White,
                 fontSize = 24.sp
             )
