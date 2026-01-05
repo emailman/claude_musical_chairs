@@ -315,7 +315,7 @@ fun MusicalChairsGame() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Musical Chairs By Claude & Eric, Version 2.0",
+                text = "Musical Chairs By Claude & Eric, Version 2.1",
                 color = Color.White,
                 fontSize = 24.sp
             )
