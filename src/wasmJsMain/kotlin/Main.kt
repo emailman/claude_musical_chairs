@@ -67,8 +67,7 @@ data class Player(
     // 0 = start, 1 = at eliminated area
     val eliminationAnimationProgress: Float = 0f,
 
-    val eliminationStartX: Float = 0f,  // X position when eliminated
-    val eliminationStartY: Float = 0f,  // Y position when eliminated
+    val eliminationPathPosition: Float = -1f,  // Path position (0-1) when eliminated
     val eliminationOrder: Int = -1      // Order in which player was eliminated (0 = first)
 )
 
@@ -238,12 +237,10 @@ fun MusicalChairsGame() {
                             val isOnRightSide = segment == PathSegment.RIGHT_STRAIGHT
 
                             if (isOnRightSide) {
-                                val elimPos = getOvalPosition(newPosition, centerX, centerY, chairs)
                                 player.copy(
                                     position = newPosition,
                                     isEliminated = true,
-                                    eliminationStartX = elimPos.x,
-                                    eliminationStartY = elimPos.y,
+                                    eliminationPathPosition = newPosition,
                                     eliminationOrder = currentEliminationCount
                                 )
                             } else {
@@ -304,7 +301,7 @@ fun MusicalChairsGame() {
 
             drawChairs(chairs, centerX, centerY)
             drawPlayers(players, chairs, centerX, centerY, textMeasurer)
-            drawEliminatedPlayers(players, size.width, textMeasurer)
+            drawEliminatedPlayers(players, chairs, centerX, centerY, size.width, textMeasurer)
         }
 
         // Title and status
@@ -315,7 +312,7 @@ fun MusicalChairsGame() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Musical Chairs By Claude & Eric, Version 2.1",
+                text = "Musical Chairs By Claude & Eric, Version 2.2",
                 color = Color.White,
                 fontSize = 24.sp
             )
@@ -717,8 +714,9 @@ fun DrawScope.drawPlayerWithNumber(player: Player, position: Offset,
     )
 }
 
-fun DrawScope.drawEliminatedPlayers(players: List<Player>, screenWidth: Float,
-                                    textMeasurer: TextMeasurer) {
+fun DrawScope.drawEliminatedPlayers(players: List<Player>, chairs: List<Chair>,
+                                    centerX: Float, centerY: Float,
+                                    screenWidth: Float, textMeasurer: TextMeasurer) {
     // Sort by elimination order so newest eliminated player appears at the bottom
     val eliminatedPlayers = players.filter { it.isEliminated }.sortedBy { it.eliminationOrder }
     val targetX = screenWidth - 90
@@ -736,10 +734,13 @@ fun DrawScope.drawEliminatedPlayers(players: List<Player>, screenWidth: Float,
     eliminatedPlayers.forEachIndexed { index, player ->
         val targetY = startY + index * 67.5f
 
+        // Calculate start position from path position using actual canvas coordinates
+        val startPos = getOvalPosition(player.eliminationPathPosition, centerX, centerY, chairs)
+
         // Interpolate position based on animation progress
         val progress = easeOutCubic(player.eliminationAnimationProgress)
-        val currentX = player.eliminationStartX + (targetX - player.eliminationStartX) * progress
-        val currentY = player.eliminationStartY + (targetY - player.eliminationStartY) * progress
+        val currentX = startPos.x + (targetX - startPos.x) * progress
+        val currentY = startPos.y + (targetY - startPos.y) * progress
         val position = Offset(currentX, currentY)
 
         drawPlayerWithNumber(player, position, textMeasurer)
