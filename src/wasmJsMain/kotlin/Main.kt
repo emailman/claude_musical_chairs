@@ -217,8 +217,6 @@ fun MusicalChairsGame() {
                     }
                 }
             } else if (gameState == GameState.ELIMINATING) {
-                val centerX = 800.dp.value / 2
-                val centerY = 500.dp.value / 2
                 val step = 0.004f
 
                 // First, move pending-elimination players to the top of the path
@@ -312,9 +310,14 @@ fun MusicalChairsGame() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Musical Chairs By Claude & Eric, Version 2.2",
+                text = "Musical Chairs By Claude & Eric",
                 color = Color.White,
                 fontSize = 24.sp
+            )
+            Text(
+                text = "Version 2.3",
+                color = Color.White,
+                fontSize = 22.sp
             )
             Text(
                 text = "Players: $activePlayerCount | Chairs: $activeChairCount",

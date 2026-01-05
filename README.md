@@ -1,4 +1,4 @@
-# Musical Chairs - Version 2.2
+# Musical Chairs - Version 2.3
 
 A browser-based implementation of the classic Musical Chairs game built with Kotlin Multiplatform and Compose for Web, compiled to WebAssembly.
 
